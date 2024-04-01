@@ -9,6 +9,7 @@
 - **Task 2 part 1:** (A & B: Analyze the first layer and show the effects of the filters) run task2_part1.py
 - **Task 2 part 2:** (task 2 part 3: Transfer Learning on Greek Letters) run greekLetter.py
 - **Task 3** (task 3: Design own experiment) run design_own_experiment.py
+- The additional data for greek letters are in handwritten_data folder.
 - **Extension:** Run extension.py
 
 ## Environment 
