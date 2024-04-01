@@ -97,24 +97,58 @@ def main(argv):
     print(f"Using {device} device")
 
     loss_fn = nn.CrossEntropyLoss()
-
-    num_conv_layers_options = [1, 2, 3]
-    conv_filter_sizes_options = [3, 5]
-    dropout_rates_options = [0.1, 0.2, 0.3]
+    num_conv_layers = 2
+    num_conv_filters = 3
+    dropout_rate = 0.2
+  
+    num_conv_layers_options = [1, 2]
+    conv_filter_sizes_options = [1, 2, 3, 4, 5]
+    dropout_rates_options = [0.1, 0.2, 0.3, 0.4, 0.5]
 
     epochs = 5
-    
     for num_conv_layers in num_conv_layers_options:
-        for num_conv_filters in conv_filter_sizes_options:
-            for dropout_rates in dropout_rates_options:
-                print(f"Testing configuration: {num_conv_layers} conv layers, {num_conv_filters}x{num_conv_filters} filter size, {dropout_rates} dropout rate")
-                model = FNetwork(num_conv_layers, num_conv_filters, dropout_rates).to(device)
-                optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+        model = FNetwork(num_conv_layers, num_conv_filters, dropout_rate).to(device)
+        optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+        print(f"Optimizing: num_conv_layers={num_conv_layers}, num_conv_filters={num_conv_filters}, dropout_rate={dropout_rate}")
+        for t in range(epochs):
+            train_network(train_dataloader, model, loss_fn, optimizer, device)
+            test_network(test_dataloader, model, loss_fn, device)
 
-                for t in range(epochs):
-                    print(f"Epoch {t+1}\n-------------------------------")
-                    train_network(train_dataloader, model, loss_fn, optimizer, device)
-                    test_network(test_dataloader, model, loss_fn, device)
+    for num_conv_filters in conv_filter_sizes_options:
+        num_conv_layers = 2
+        dropout_rate = 0.1
+        model = FNetwork(num_conv_layers, num_conv_filters, dropout_rate).to(device)
+        optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+
+        print(f"Optimizing: num_conv_layers={num_conv_layers}, num_conv_filters={num_conv_filters}, dropout_rate={dropout_rate}")
+        for t in range(epochs):
+            print(f"Epoch {t+1}")
+            train_network(train_dataloader, model, loss_fn, optimizer, device)
+            test_network(test_dataloader, model, loss_fn, device)
+
+    # for num_conv_layers in num_conv_layers_options:
+    #     num_conv_filters = 2
+    #     dropout_rate = 0.1
+    #     model = FNetwork(num_conv_layers, num_conv_filters, dropout_rate).to(device)
+    #     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+
+    #     print(f"Optimizing: num_conv_layers={num_conv_layers}, num_conv_filters={num_conv_filters}, dropout_rate={dropout_rate}")
+    #     for t in range(epochs):
+    #         print(f"Epoch {t+1}")
+    #         train_network(train_dataloader, model, loss_fn, optimizer, device)
+    #         test_network(test_dataloader, model, loss_fn, device)
+
+    # for dropout_rate in dropout_rates_options:
+    #     num_conv_layers = 2
+    #     num_conv_filters = 3
+    #     model = FNetwork(num_conv_layers, num_conv_filters, dropout_rate).to(device)
+    #     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+
+    #     print(f"Optimizing: num_conv_layers={num_conv_layers}, num_conv_filters={num_conv_filters}, dropout_rate={dropout_rate}")
+    #     for t in range(epochs):
+    #         print(f"Epoch {t+1}")
+    #         train_network(train_dataloader, model, loss_fn, optimizer, device)
+    #         test_network(test_dataloader, model, loss_fn, device)
 
 if __name__ == "__main__":
     main(sys.argv)

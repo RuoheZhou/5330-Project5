@@ -1,3 +1,4 @@
+# task 2 part 3: Transfer Learning on Greek Letters
 import torch
 from torch import nn
 from torch import optim
@@ -7,6 +8,9 @@ from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import numpy as np
+from PIL import Image
+import math
+from PIL import Image,  ImageOps, ImageEnhance
 
 class Net(nn.Module):
     def __init__(self):
@@ -44,6 +48,20 @@ def plot_training_error(training_errors):
     plt.legend()
     plt.grid(True)
     plt.show()
+def preprocess_and_load_images(image_paths, transform):
+    images = []
+    for image_path in image_paths:
+        image = Image.open(image_path)
+        image = transform(image)
+        images.append(image.unsqueeze(0))  
+    return torch.cat(images, dim=0)  
+
+def classify_images(model, images, class_names):
+    with torch.no_grad():
+        outputs = model(images)
+        _, predicted = torch.max(outputs, 1)
+        for idx, pred in enumerate(predicted):
+            print(f'Image {idx + 1}: Predicted class is {class_names[pred.item()]}')
 
 class GreekTransform:
     def __call__(self, x):
@@ -51,6 +69,49 @@ class GreekTransform:
         x = torchvision.transforms.functional.affine(x, 0, (0,0), 36/128, 0)
         x = torchvision.transforms.functional.center_crop(x, (28, 28))
         return torchvision.transforms.functional.invert(x)
+
+def preprocess_and_load_images(image_paths):
+
+    transform_pipeline = transforms.Compose([
+        GreekTransform(),
+        transforms.ToTensor(),
+        transforms.GaussianBlur(5, sigma=(0.1, 2.0)),
+        transforms.Normalize((0.1307,), (0.3081,))
+    ])
+
+    images = []
+    for image_path in image_paths:
+        image = Image.open(image_path)
+       
+        image = transform_pipeline(image)
+        images.append(image.unsqueeze(0))  
+    return torch.cat(images, dim=0)  
+
+def process_custom_image(image_path):
+    img = Image.open(image_path).convert('L')
+    img = img.resize((28, 28))
+    img = ImageOps.invert(img)
+    img_array = np.array(img) / 255.0
+    img_array = 1.0 - img_array
+    img_array = (img_array - 0.1307) / 0.3081
+    img_tensor = torch.tensor(img_array).unsqueeze(0).unsqueeze(0).float()
+    return img_tensor
+
+def classify_and_plot(model, image_tensor):
+    with torch.no_grad():
+        output = model(image_tensor)
+        pred = output.argmax(dim=1, keepdim=True)
+    plt.imshow(image_tensor.squeeze().numpy(), cmap='binary')
+    plt.title(f'Predicted: {pred.item()}')
+    plt.axis('off')
+    plt.show()
+
+
+def process_and_classify_custom_images(model, image_paths):
+    for image_path in image_paths:
+        img_tensor = process_custom_image(image_path)
+        classify_and_plot(model, img_tensor)
+
 
 def main():
     training_set_path = './greek_train'  
@@ -63,20 +124,23 @@ def main():
                                              transforms.Normalize((0.1307,), (0.3081,))
                                          ])),
         batch_size=9,
-        shuffle=True
+        shuffle=False
     )
     
     model = load_model('./model/model.pth')
-    print(model)  
+    print(model)
 
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
     criterion = nn.CrossEntropyLoss()
 
     training_errors = []
     epochs = 800
+    perfect_threshold = 0.99  
     model.train()
+
     for epoch in range(epochs):
         total_loss = 0
+        correct = 0
         for data, target in greek_train:
             optimizer.zero_grad()
             output = model(data)
@@ -84,12 +148,26 @@ def main():
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-        avg_loss = total_loss / len(greek_train)
-        
+            pred = output.argmax(dim=1, keepdim=True)  
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
+        avg_loss = total_loss / len(greek_train.dataset)
+        accuracy = correct / len(greek_train.dataset)
+
         training_errors.append(avg_loss)
-        print(f'Epoch {epoch + 1}, Avg Loss: {avg_loss:.4f}')
+        print(f'Epoch {epoch + 1}, Avg Loss: {avg_loss:.4f}, Accuracy: {accuracy:.4f}')
 
-    plot_training_error(training_errors)
-
+        if accuracy >= perfect_threshold:
+            print(f"Reached almost perfect accuracy after {epoch + 1} epochs.")
+            break
+    
+    image_paths = [
+        './handwritten_data/test1.png', './handwritten_data/test2.png', './handwritten_data/test3.png',
+        './handwritten_data/test4.png', './handwritten_data/test5.png', './handwritten_data/test6.png',
+        './handwritten_data/test7.png', './handwritten_data/test8.png', './handwritten_data/test9.png'
+    ]
+    process_and_classify_custom_images(model, image_paths, i)
+    
 if __name__ == '__main__':
     main()
+
