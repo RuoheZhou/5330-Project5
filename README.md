@@ -10,9 +10,11 @@
 - **Task 2 part 2:** (task 2 part 3: Transfer Learning on Greek Letters) run greekLetter.py
 - **Task 3** (task 3: Design own experiment) run design_own_experiment.py
 - The additional data for greek letters are in handwritten_data folder.
-- **Extension:** Run extension.py
+- **Extension1:** Run extension.py
+- **Extension2:** Run extension2.py
+- **Extension3:** Run extension3.py
 
 ## Environment 
 The scripts were authored using VS Code.
 
-Using 1 time travel day.
+Using 3 time travel day.
